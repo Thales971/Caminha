@@ -1,7 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { cores } from '../theme';
+import { paletaClaro } from '../theme';
 
-export default function Header({ titulo, subtitulo }) {
+export default function Header({ titulo, subtitulo, c = paletaClaro, f = 1 }) {
+  const styles = criarStyles(c, f);
+
   return (
     <View style={styles.header}>
       <Text style={styles.marca}>Caminha</Text>
@@ -11,29 +13,32 @@ export default function Header({ titulo, subtitulo }) {
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    backgroundColor: cores.white,
-    paddingTop: 16,
-    paddingBottom: 14,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: cores.line,
-  },
-  marca: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: cores.mute,
-    marginBottom: 2,
-  },
-  titulo: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: cores.ink,
-  },
-  subtitulo: {
-    fontSize: 12,
-    color: cores.mute,
-    marginTop: 2,
-  },
-});
+function criarStyles(c, f) {
+  const fs = (n) => Math.round(n * f);
+  return StyleSheet.create({
+    header: {
+      backgroundColor: c.white,
+      paddingTop: 16,
+      paddingBottom: 14,
+      paddingHorizontal: 20,
+      borderBottomWidth: 1,
+      borderBottomColor: c.line,
+    },
+    marca: {
+      fontSize: fs(12),
+      fontWeight: 'bold',
+      color: c.mute,
+      marginBottom: 2,
+    },
+    titulo: {
+      fontSize: fs(20),
+      fontWeight: 'bold',
+      color: c.ink,
+    },
+    subtitulo: {
+      fontSize: fs(12),
+      color: c.mute,
+      marginTop: 2,
+    },
+  });
+}

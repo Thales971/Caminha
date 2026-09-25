@@ -1,14 +1,20 @@
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { paletaClaro } from '../theme';
 
-export default function TelaInicio({ passosHoje, meta, onNavegarCaminhar }) {
-  const percentual = Math.min(100, Math.round((passosHoje / meta) * 100));
+export default function TelaInicio({ passosHoje, meta, onNavegarCaminhar, c = paletaClaro, f = 1 }) {
+  const metaFinal = Number(meta) || 6000;
+  const percentual = Math.min(100, Math.round((passosHoje / metaFinal) * 100));
+  const styles = criarStyles(c, f);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.card}>
         <Text style={styles.titulo}>Caminhada do dia</Text>
-        <Text style={styles.numero}>{passosHoje}</Text>
-        <Text style={styles.texto}>passos hoje • meta {meta}</Text>
+        <Text style={styles.numero}>{passosHoje.toLocaleString('pt-BR')}</Text>
+        <Text style={styles.texto}>
+          passos hoje • meta {metaFinal.toLocaleString('pt-BR')}
+        </Text>
         <View style={styles.barraFundo}>
           <View style={[styles.barraValor, { width: `${percentual}%` }]} />
         </View>
@@ -32,67 +38,78 @@ export default function TelaInicio({ passosHoje, meta, onNavegarCaminhar }) {
         onPress={onNavegarCaminhar}
         activeOpacity={0.8}
       >
-        <Text style={styles.botaoTexto}>Iniciar caminhada</Text>
+        <View style={styles.botaoLinha}>
+          <Ionicons name="play" size={16} color={c.white} />
+          <Text style={styles.botaoTexto}>Iniciar caminhada</Text>
+        </View>
       </TouchableOpacity>
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
-  },
-  titulo: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 8,
-  },
-  numero: {
-    fontSize: 42,
-    fontWeight: 'bold',
-    color: '#111827',
-  },
-  texto: {
-    fontSize: 14,
-    color: '#4B5563',
-    lineHeight: 20,
-    marginTop: 2,
-  },
-  destaque: {
-    fontWeight: 'bold',
-    color: '#111827',
-  },
-  barraFundo: {
-    height: 8,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 4,
-    marginTop: 12,
-    marginBottom: 6,
-    overflow: 'hidden',
-  },
-  barraValor: {
-    height: 8,
-    backgroundColor: '#E8B931',
-  },
-  botao: {
-    backgroundColor: '#1C1917',
-    paddingVertical: 14,
-    borderRadius: 6,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  botaoTexto: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: 'bold',
-  },
-});
+function criarStyles(c, f) {
+  const fs = (n) => Math.round(n * f);
+  return StyleSheet.create({
+    container: {
+      padding: 16,
+    },
+    card: {
+      backgroundColor: c.white,
+      borderWidth: 1,
+      borderColor: c.line,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 12,
+    },
+    titulo: {
+      fontSize: fs(16),
+      fontWeight: 'bold',
+      color: c.ink,
+      marginBottom: 8,
+    },
+    numero: {
+      fontSize: fs(42),
+      fontWeight: 'bold',
+      color: c.ink,
+    },
+    texto: {
+      fontSize: fs(14),
+      color: c.mute,
+      lineHeight: Math.round(20 * f),
+      marginTop: 2,
+    },
+    destaque: {
+      fontWeight: 'bold',
+      color: c.ink,
+    },
+    barraFundo: {
+      height: 8,
+      backgroundColor: c.neve,
+      borderRadius: 4,
+      marginTop: 12,
+      marginBottom: 6,
+      overflow: 'hidden',
+    },
+    barraValor: {
+      height: 8,
+      backgroundColor: c.yellow,
+    },
+    botao: {
+      backgroundColor: c.ink,
+      paddingVertical: 14,
+      borderRadius: 8,
+      alignItems: 'center',
+      marginTop: 8,
+    },
+    botaoLinha: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    botaoTexto: {
+      color: c.white,
+      fontSize: fs(15),
+      fontWeight: 'bold',
+    },
+  });
+}

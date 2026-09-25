@@ -1,7 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Alert } from 'react-native';
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  Modal,
+  ActivityIndicator,
+  Linking,
+} from 'react-native';
 import { Pedometer } from 'expo-sensors';
 import * as Location from 'expo-location';
+import { Ionicons } from '@expo/vector-icons';
+import { paletaClaro } from '../theme';
 
 const PASSO_METROS = 0.75;
 
@@ -11,28 +21,38 @@ function formatarTempo(segundos) {
   return `${String(min).padStart(2, '0')}:${String(seg).padStart(2, '0')}`;
 }
 
-export default function TelaCaminhada({ onSalvar }) {
-  const [disponivel, setDisponivel] = useState(true);
+export default function TelaCaminhada({ onSalvar, onVoltar, c = paletaClaro, f = 1 }) {
+  const [disponivel, setDisponivel] = useState(null);
   const [permissaoPassos, setPermissaoPassos] = useState('undetermined');
   const [gpsOk, setGpsOk] = useState(false);
+  const [gpsRecusado, setGpsRecusado] = useState(false);
   const [andando, setAndando] = useState(false);
   const [passos, setPassos] = useState(0);
   const [segundos, setSegundos] = useState(0);
   const [distanciaGps, setDistanciaGps] = useState(null);
+  const [modalEncerrar, setModalEncerrar] = useState(false);
 
   const assinaturaRef = useRef(null);
   const timerRef = useRef(null);
   const origemRef = useRef(null);
 
   useEffect(() => {
-    Pedometer.isAvailableAsync().then((ok) => {
-      setDisponivel(ok);
-    });
+    verificarSensor();
 
     return () => {
       pararLeitura();
     };
   }, []);
+
+  const verificarSensor = async () => {
+    try {
+      const ok = await Pedometer.isAvailableAsync();
+      setDisponivel(ok);
+    } catch (erro) {
+      console.log('Falha ao checar o pedômetro', erro);
+      setDisponivel(false);
+    }
+  };
 
   const pararLeitura = () => {
     if (assinaturaRef.current) {
@@ -45,17 +65,7 @@ export default function TelaCaminhada({ onSalvar }) {
     }
   };
 
-  const iniciar = async () => {
-    const movimento = await Pedometer.requestPermissionsAsync();
-    setPermissaoPassos(movimento.status);
-    if (movimento.status !== 'granted') {
-      return;
-    }
-
-    const local = await Location.requestForegroundPermissionsAsync();
-    const temGps = local.status === 'granted';
-    setGpsOk(temGps);
-
+  const iniciarLeitura = async (comGps) => {
     const temSensor = await Pedometer.isAvailableAsync();
     setDisponivel(temSensor);
     if (!temSensor) {
@@ -76,7 +86,7 @@ export default function TelaCaminhada({ onSalvar }) {
       setSegundos((atual) => atual + 1);
     }, 1000);
 
-    if (temGps) {
+    if (comGps) {
       try {
         const pos = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
@@ -88,7 +98,30 @@ export default function TelaCaminhada({ onSalvar }) {
     }
   };
 
-  const encerrar = async () => {
+  const pedirEIniciar = async () => {
+    const movimento = await Pedometer.requestPermissionsAsync();
+    setPermissaoPassos(movimento.status);
+    if (movimento.status !== 'granted') {
+      return;
+    }
+
+    const local = await Location.requestForegroundPermissionsAsync();
+    if (local.status === 'granted') {
+      setGpsOk(true);
+      await iniciarLeitura(true);
+    } else {
+      setGpsOk(false);
+      setGpsRecusado(true);
+    }
+  };
+
+  const continuarSemGps = async () => {
+    setGpsRecusado(false);
+    await iniciarLeitura(false);
+  };
+
+  const confirmarEncerrar = async () => {
+    setModalEncerrar(false);
     pararLeitura();
     setAndando(false);
 
@@ -109,40 +142,42 @@ export default function TelaCaminhada({ onSalvar }) {
     const km = kmGps !== null ? kmGps : kmEstimado;
     const ritmo = segundos > 0 ? Math.round((passos / segundos) * 60) : 0;
 
-    const sessao = {
+    onSalvar({
       passos,
       segundos,
       ritmo,
       km: Number(km.toFixed(2)),
       usouGps: kmGps !== null,
-    };
-
-    Alert.alert(
-      'Encerrar caminhada?',
-      `${passos} passos em ${formatarTempo(segundos)}`,
-      [
-        { text: 'Continuar sem salvar', style: 'cancel' },
-        {
-          text: 'Salvar sessão',
-          onPress: () => {
-            onSalvar(sessao);
-            Alert.alert('Pronto', 'Sessão gravada no histórico.');
-            setPassos(0);
-            setSegundos(0);
-          },
-        },
-      ]
-    );
+    });
   };
 
-  if (!disponivel) {
+  const styles = criarStyles(c, f);
+
+  if (disponivel === null) {
+    return (
+      <View style={styles.tela}>
+        <ActivityIndicator size="large" color={c.brown} />
+        <Text style={styles.rotulo}>Verificando o pedômetro…</Text>
+      </View>
+    );
+  }
+
+  if (disponivel === false) {
     return (
       <View style={styles.tela}>
         <View style={styles.avisoErro}>
+          <Text style={styles.avisoErroTitulo}>Pedômetro indisponível</Text>
           <Text style={styles.avisoErroTexto}>
-            Pedômetro indisponível neste aparelho ou emulador. O Caminha não inventa passo. Teste em um celular físico.
+            Este aparelho ou emulador não tem pedômetro. O Caminha não inventa passo.
+            Teste em um celular físico.
           </Text>
         </View>
+        <TouchableOpacity style={styles.botaoEscuro} onPress={verificarSensor} activeOpacity={0.8}>
+          <Text style={styles.botaoTexto}>Tentar de novo</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.botaoContornar} onPress={onVoltar} activeOpacity={0.8}>
+          <Text style={styles.botaoContornarTexto}>Voltar ao início</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -151,12 +186,47 @@ export default function TelaCaminhada({ onSalvar }) {
     return (
       <View style={styles.tela}>
         <View style={styles.avisoErro}>
+          <Text style={styles.avisoErroTitulo}>Permissão de passos negada</Text>
           <Text style={styles.avisoErroTexto}>
-            Sem permissão de atividade o app não conta passo. Libere movimento / atividade física nos ajustes do celular e tente de novo.
+            Sem permissão de atividade física o app não conta passo. Libere movimento
+            nos ajustes do celular e tente de novo.
           </Text>
         </View>
-        <TouchableOpacity style={styles.botaoEscuro} onPress={iniciar} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.botaoEscuro} onPress={pedirEIniciar} activeOpacity={0.8}>
           <Text style={styles.botaoTexto}>Tentar de novo</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.botaoContornar} onPress={() => Linking.openSettings()} activeOpacity={0.8}>
+          <Text style={styles.botaoContornarTexto}>Abrir ajustes do celular</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.botaoContornar} onPress={onVoltar} activeOpacity={0.8}>
+          <Text style={styles.botaoContornarTexto}>Voltar ao início</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (gpsRecusado) {
+    return (
+      <View style={styles.tela}>
+        <View style={styles.avisoAviso}>
+          <Text style={styles.avisoAvisoTitulo}>GPS recusado</Text>
+          <Text style={styles.avisoAvisoTexto}>
+            A sessão pode começar mesmo assim, só com passos e tempo. A distância sai
+            da estimativa por passada.
+          </Text>
+        </View>
+        <TouchableOpacity style={styles.botaoEscuro} onPress={continuarSemGps} activeOpacity={0.8}>
+          <View style={styles.botaoLinha}>
+            <Ionicons name="walk" size={16} color={c.white} />
+            <Text style={styles.botaoTexto}>Começar só com pedômetro</Text>
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.botaoContornar}
+          onPress={() => setGpsRecusado(false)}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.botaoContornarTexto}>Voltar</Text>
         </TouchableOpacity>
       </View>
     );
@@ -194,7 +264,8 @@ export default function TelaCaminhada({ onSalvar }) {
 
       {andando && !gpsOk && (
         <Text style={styles.avisoGps}>
-          GPS recusado. A sessão segue só com o pedômetro. Distância vai ser estimada pelo passo.
+          GPS recusado. A sessão segue só com o pedômetro. Distância vai ser estimada
+          pelo passo.
         </Text>
       )}
 
@@ -203,14 +274,50 @@ export default function TelaCaminhada({ onSalvar }) {
       )}
 
       {!andando ? (
-        <TouchableOpacity style={styles.botaoEscuro} onPress={iniciar} activeOpacity={0.8}>
-          <Text style={styles.botaoTexto}>Começar a andar</Text>
+        <TouchableOpacity style={styles.botaoEscuro} onPress={pedirEIniciar} activeOpacity={0.8}>
+          <View style={styles.botaoLinha}>
+            <Ionicons name="play" size={16} color={c.white} />
+            <Text style={styles.botaoTexto}>Começar a andar</Text>
+          </View>
         </TouchableOpacity>
       ) : (
-        <TouchableOpacity style={styles.botaoVermelho} onPress={encerrar} activeOpacity={0.8}>
-          <Text style={styles.botaoTexto}>Encerrar sessão</Text>
+        <TouchableOpacity
+          style={styles.botaoVermelho}
+          onPress={() => setModalEncerrar(true)}
+          activeOpacity={0.8}
+        >
+          <View style={styles.botaoLinha}>
+            <Ionicons name="stop" size={14} color={c.white} />
+            <Text style={styles.botaoTexto}>Encerrar sessão</Text>
+          </View>
         </TouchableOpacity>
       )}
+
+      <Modal
+        visible={modalEncerrar}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalEncerrar(false)}
+      >
+        <View style={styles.modalFundo}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitulo}>Encerrar caminhada?</Text>
+            <Text style={styles.modalTexto}>
+              {passos} passos em {formatarTempo(segundos)}
+            </Text>
+            <TouchableOpacity style={styles.botaoEscuro} onPress={confirmarEncerrar} activeOpacity={0.8}>
+              <Text style={styles.botaoTexto}>Salvar sessão</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.botaoContornar}
+              onPress={() => setModalEncerrar(false)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.botaoContornarTexto}>Continuar andando</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -228,115 +335,195 @@ function distanciaKm(a, b) {
   return r * c;
 }
 
-const styles = StyleSheet.create({
-  tela: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-  },
-  numero: {
-    fontSize: 64,
-    fontWeight: 'bold',
-    color: '#111827',
-  },
-  rotulo: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 16,
-  },
-  tagStatus: {
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 6,
-    marginBottom: 16,
-  },
-  tagVerde: {
-    backgroundColor: '#DCFCE7',
-  },
-  tagCinza: {
-    backgroundColor: '#F3F4F6',
-  },
-  tagTexto: {
-    fontSize: 13,
-    fontWeight: 'bold',
-  },
-  tagTextoVerde: {
-    color: '#15803D',
-  },
-  tagTextoCinza: {
-    color: '#6B7280',
-  },
-  tabelaValores: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    paddingVertical: 12,
-    width: '100%',
-    marginBottom: 16,
-  },
-  colunaValor: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  separadorColuna: {
-    width: 1,
-    backgroundColor: '#E2E8F0',
-  },
-  rotuloEixo: {
-    fontSize: 12,
-    color: '#64748B',
-    fontWeight: '500',
-    marginBottom: 4,
-  },
-  valorEixo: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#0F172A',
-  },
-  avisoGps: {
-    fontSize: 13,
-    color: '#92400E',
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  textoKm: {
-    fontSize: 14,
-    color: '#111827',
-    marginBottom: 12,
-  },
-  botaoEscuro: {
-    backgroundColor: '#1C1917',
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-    width: '100%',
-  },
-  botaoVermelho: {
-    backgroundColor: '#B42318',
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-    width: '100%',
-  },
-  botaoTexto: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 15,
-  },
-  avisoErro: {
-    backgroundColor: '#FEE2E2',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#FCA5A5',
-  },
-  avisoErroTexto: {
-    color: '#991B1B',
-    fontSize: 14,
-    textAlign: 'center',
-  },
-});
+function criarStyles(c, f) {
+  const fs = (n) => Math.round(n * f);
+  return StyleSheet.create({
+    tela: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 16,
+    },
+    numero: {
+      fontSize: fs(64),
+      fontWeight: 'bold',
+      color: c.ink,
+    },
+    rotulo: {
+      fontSize: fs(14),
+      color: c.mute,
+      marginBottom: 16,
+    },
+    tagStatus: {
+      paddingVertical: 6,
+      paddingHorizontal: 14,
+      borderRadius: 6,
+      marginBottom: 16,
+    },
+    tagVerde: {
+      backgroundColor: c.greenBg,
+    },
+    tagCinza: {
+      backgroundColor: c.neve,
+    },
+    tagTexto: {
+      fontSize: fs(13),
+      fontWeight: 'bold',
+    },
+    tagTextoVerde: {
+      color: c.green,
+    },
+    tagTextoCinza: {
+      color: c.mute,
+    },
+    tabelaValores: {
+      flexDirection: 'row',
+      backgroundColor: c.white,
+      borderWidth: 1,
+      borderColor: c.line,
+      borderRadius: 8,
+      paddingVertical: 12,
+      width: '100%',
+      marginBottom: 16,
+    },
+    colunaValor: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    separadorColuna: {
+      width: 1,
+      backgroundColor: c.line,
+    },
+    rotuloEixo: {
+      fontSize: fs(12),
+      color: c.mute,
+      fontWeight: '500',
+      marginBottom: 4,
+    },
+    valorEixo: {
+      fontSize: fs(16),
+      fontWeight: 'bold',
+      color: c.ink,
+    },
+    avisoGps: {
+      fontSize: fs(13),
+      color: c.brown,
+      textAlign: 'center',
+      marginBottom: 12,
+    },
+    textoKm: {
+      fontSize: fs(14),
+      color: c.ink,
+      marginBottom: 12,
+    },
+    botaoEscuro: {
+      backgroundColor: c.ink,
+      paddingVertical: 14,
+      borderRadius: 8,
+      alignItems: 'center',
+      width: '100%',
+      marginBottom: 10,
+    },
+    botaoVermelho: {
+      backgroundColor: c.red,
+      paddingVertical: 14,
+      borderRadius: 8,
+      alignItems: 'center',
+      width: '100%',
+    },
+    botaoContornar: {
+      borderWidth: 1,
+      borderColor: c.ink,
+      paddingVertical: 14,
+      borderRadius: 8,
+      alignItems: 'center',
+      width: '100%',
+      marginBottom: 10,
+    },
+    botaoLinha: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    botaoTexto: {
+      color: c.white,
+      fontWeight: 'bold',
+      fontSize: fs(15),
+    },
+    botaoContornarTexto: {
+      color: c.ink,
+      fontWeight: 'bold',
+      fontSize: fs(15),
+    },
+    avisoErro: {
+      backgroundColor: c.errBg,
+      borderWidth: 1,
+      borderColor: c.errLine,
+      padding: 14,
+      borderRadius: 12,
+      marginBottom: 16,
+      width: '100%',
+    },
+    avisoErroTitulo: {
+      color: c.err,
+      fontSize: fs(15),
+      fontWeight: 'bold',
+      marginBottom: 6,
+      textAlign: 'center',
+    },
+    avisoErroTexto: {
+      color: c.err,
+      fontSize: fs(14),
+      textAlign: 'center',
+      lineHeight: Math.round(20 * f),
+    },
+    avisoAviso: {
+      backgroundColor: c.cream,
+      borderWidth: 1,
+      borderColor: c.yellow,
+      padding: 14,
+      borderRadius: 12,
+      marginBottom: 16,
+      width: '100%',
+    },
+    avisoAvisoTitulo: {
+      color: c.brown,
+      fontSize: fs(15),
+      fontWeight: 'bold',
+      marginBottom: 6,
+      textAlign: 'center',
+    },
+    avisoAvisoTexto: {
+      color: c.ink,
+      fontSize: fs(14),
+      textAlign: 'center',
+      lineHeight: Math.round(20 * f),
+    },
+    modalFundo: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'center',
+      padding: 24,
+    },
+    modalCard: {
+      backgroundColor: c.white,
+      borderWidth: 1,
+      borderColor: c.line,
+      borderRadius: 12,
+      padding: 20,
+    },
+    modalTitulo: {
+      fontSize: fs(18),
+      fontWeight: 'bold',
+      color: c.ink,
+      marginBottom: 6,
+      textAlign: 'center',
+    },
+    modalTexto: {
+      fontSize: fs(14),
+      color: c.mute,
+      textAlign: 'center',
+      marginBottom: 16,
+    },
+  });
+}
