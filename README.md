@@ -12,7 +12,7 @@ O sensor principal é o pedômetro do celular. O GPS entra só para estimar a di
 - expo-sensors (Pedometer)
 - expo-location (opcional)
 - @expo/vector-icons (ícones vetoriais)
-- AsyncStorage no histórico e nas preferências
+- @react-native-async-storage/async-storage (histórico e preferências)
 
 Mesmo jeito dos apps da aula: `App.js` escolhe a tela, pastas `src/screens` e `src/components`, sem React Navigation.
 
@@ -25,7 +25,33 @@ npm install
 npx expo start
 ```
 
-Abre no Expo Go. Pedômetro de verdade precisa de celular físico. Emulador costuma cair na tela de sensor indisponível, e isso é esperado.
+Abre no Expo Go. Pedômetro de verdade precisa de celular físico. Emulador, e também o navegador, caem na tela de sensor indisponível, e isso é esperado.
+
+Também roda no navegador, para conferir a interface sem sensor:
+
+```bash
+npx expo start --web
+```
+
+## Gerar o APK para instalar no celular
+
+O projeto já tem o `eas.json` com o perfil `preview`, que gera APK instalável (não é Play Store).
+
+```bash
+npx eas-cli login
+npx eas-cli build -p android --profile preview
+```
+
+O EAS devolve um link para baixar o `.apk`. Instala no Android e o app abre sem servidor nenhum — é o jeito de testar o pedômetro de verdade.
+
+Para developer com build próprio (recompila o APK só quando muda código nativo):
+
+```bash
+npx expo install expo-dev-client
+npx eas-cli build -p android --profile development
+```
+
+Depois disso, com o APK instalado no celular, é só `npx expo start` e o JavaScript atualiza sem gerar outro APK.
 
 ## Telas
 
