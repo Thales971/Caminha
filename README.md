@@ -2,7 +2,7 @@
 
 App de caminhada com pedômetro. Trabalho de Programação para Dispositivos Móveis — Escola SENAI de Valinhos.
 
-O sensor principal é o pedômetro do celular. O GPS entra só para estimar distância. Sem o pedômetro o app não faz sentido.
+O sensor principal é o pedômetro do celular. O GPS entra só para estimar a distância. Sem o pedômetro o app não faz sentido.
 
 ## Stack
 
@@ -11,7 +11,8 @@ O sensor principal é o pedômetro do celular. O GPS entra só para estimar dist
 - JavaScript
 - expo-sensors (Pedometer)
 - expo-location (opcional)
-- AsyncStorage no histórico
+- @expo/vector-icons (ícones vetoriais)
+- AsyncStorage no histórico e nas preferências
 
 Mesmo jeito dos apps da aula: `App.js` escolhe a tela, pastas `src/screens` e `src/components`, sem React Navigation.
 
@@ -28,15 +29,32 @@ Abre no Expo Go. Pedômetro de verdade precisa de celular físico. Emulador cost
 
 ## Telas
 
-- Início: passos do dia e botão para começar
-- Caminhar: leitura ao vivo do pedômetro
-- Histórico: sessões salvas no aparelho
-- Sobre: ficha do sensor e permissões
+- Onboarding e permissões (na primeira abertura, gravadas no aparelho)
+- Início: passos do dia, meta e botão para começar
+- Caminhar: leitura ao vivo do pedômetro, com tag SENSOR ATIVO
+- Modal de encerrar: salvar a sessão ou continuar andando
+- Resultado: resumo da sessão salva
+- Histórico: lista das sessões (com estado vazio)
+- Detalhe: uma sessão inteira, com origem da distância
+- Ajustes: tema, tamanho de texto, meta e permissões
+
+## Estados tratados
+
+- Histórico vazio com instrução e botão
+- Permissão de passos negada: tela de erro com botão para os ajustes do celular
+- GPS recusado: escolha entre começar só com pedômetro ou voltar
+- Pedômetro indisponível (emulador): o app não inventa número
+- Verificando o sensor antes de liberar a tela
+- Tema claro e escuro com tamanho de texto, salvos no aparelho
 
 ## Permissões
 
-- Atividade física / movimento: obrigatória
-- Localização: opcional. Se recusar, a sessão segue só com os passos
+- Atividade física / movimento (Android `ACTIVITY_RECOGNITION`, iOS Motion and Fitness): obrigatória
+- Localização em primeiro plano: opcional. Se recusar, a sessão segue só com os passos
+
+## Protótipo
+
+- Figma: https://www.figma.com/design/amXyXC1K1Hn6CM2H46CluL/Caminha---Prototipo-Sensores-SENAI
 
 ## Autor
 
