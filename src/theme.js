@@ -1,0 +1,15 @@
+export const cores = {
+  paper: '#F4EFE6',
+  ink: '#1C1917',
+  yellow: '#E8B931',
+  white: '#FFFFFF',
+  mute: '#6B7280',
+  line: '#E5E7EB',
+  red: '#B42318',
+  cream: '#FEF9C3',
+  brown: '#92400E',
+  greenBg: '#DCFCE7',
+  green: '#15803D',
+  errBg: '#FEE2E2',
+  err: '#991B1B',
+};
