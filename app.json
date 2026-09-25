@@ -28,6 +28,12 @@
           "locationWhenInUsePermission": "O GPS é opcional e só serve para estimar a distância da rota."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "045810bf-6e32-4e40-85f5-d785237e66a1"
+      }
+    },
+    "owner": "thales098776"
   }
 }
