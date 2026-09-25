@@ -48,14 +48,14 @@ export default function TelaSobre({ prefs, atualizarPrefs, c = paletaClaro, f = 
         setStatusPassos(rotuloPermissao(permissao.status));
       } catch (erro) {
         console.log('Erro ao ler permissão de passos', erro);
-        setStatusPassos('indisponível');
+        setStatusPassos('Indisponível');
       }
       try {
         const permissao = await Location.getForegroundPermissionsAsync();
         setStatusGps(rotuloPermissao(permissao.status));
       } catch (erro) {
         console.log('Erro ao ler permissão de GPS', erro);
-        setStatusGps('pendente');
+        setStatusGps('Pendente');
       }
     })();
   }, []);
@@ -177,12 +177,12 @@ export default function TelaSobre({ prefs, atualizarPrefs, c = paletaClaro, f = 
 
 function rotuloPermissao(status) {
   if (status === 'granted') {
-    return 'liberada';
+    return 'Liberada';
   }
   if (status === 'denied') {
-    return 'negada';
+    return 'Negada';
   }
-  return 'pendente';
+  return 'Pendente';
 }
 
 function criarStyles(c, f) {
@@ -276,7 +276,8 @@ function criarStyles(c, f) {
       fontSize: fs(13),
       color: c.ink,
       fontWeight: 'bold',
-      textTransform: 'capitalize',
+      textAlign: 'right',
+      marginLeft: 12,
     },
     texto: {
       fontSize: fs(13),
