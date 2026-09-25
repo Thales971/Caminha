@@ -1,11 +1,12 @@
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { cores } from '../theme';
 
 export default function TabBar({ abaAtual, onSelecionarAba }) {
   const abas = [
     { id: 'inicio', rotulo: 'Início' },
     { id: 'caminhar', rotulo: 'Caminhar' },
     { id: 'historico', rotulo: 'Histórico' },
-    { id: 'sobre', rotulo: 'Sobre' },
+    { id: 'sobre', rotulo: 'Ajustes' },
   ];
 
   return (
@@ -32,28 +33,28 @@ export default function TabBar({ abaAtual, onSelecionarAba }) {
 const styles = StyleSheet.create({
   barraAbas: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: cores.white,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: cores.line,
     paddingVertical: 10,
     paddingHorizontal: 8,
   },
   abaItem: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 6,
-    borderRadius: 6,
+    paddingVertical: 8,
+    borderRadius: 8,
   },
   abaAtiva: {
-    backgroundColor: '#FEF9C3',
+    backgroundColor: cores.cream,
   },
   abaTexto: {
-    fontSize: 13,
-    color: '#6B7280',
+    fontSize: 12,
+    color: cores.mute,
     fontWeight: '600',
   },
   abaTextoAtivo: {
-    color: '#92400E',
+    color: cores.brown,
     fontWeight: 'bold',
   },
 });

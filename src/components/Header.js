@@ -1,29 +1,39 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { cores } from '../theme';
 
-export default function Header() {
+export default function Header({ titulo, subtitulo }) {
   return (
     <View style={styles.header}>
-      <Text style={styles.titulo}>Caminha</Text>
-      <Text style={styles.subtitulo}>Pedômetro • React Native Expo</Text>
+      <Text style={styles.marca}>Caminha</Text>
+      <Text style={styles.titulo}>{titulo || 'Caminha'}</Text>
+      <Text style={styles.subtitulo}>{subtitulo || 'Pedômetro do celular'}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   header: {
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 14,
+    backgroundColor: cores.white,
+    paddingTop: 16,
+    paddingBottom: 14,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: cores.line,
+  },
+  marca: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: cores.mute,
+    marginBottom: 2,
   },
   titulo: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#111827',
+    color: cores.ink,
   },
   subtitulo: {
     fontSize: 12,
-    color: '#6B7280',
+    color: cores.mute,
+    marginTop: 2,
   },
 });
