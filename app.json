@@ -27,7 +27,8 @@
         {
           "locationWhenInUsePermission": "O GPS é opcional e só serve para estimar a distância da rota."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "extra": {
       "eas": {
